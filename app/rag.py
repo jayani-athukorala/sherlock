@@ -73,15 +73,13 @@ def create_vector_index(file_path: str):
 
     return "File uploaded successfully!"
 
-
 # ---------------------------------------------------------
-# Generate using ChromaDB + LLM
+# Find Context
 # ---------------------------------------------------------
-def ask_question(question: str) -> str:
-   
+def find_context(question: str):
     # If the DB does not exist
     if not os.path.exists(CHROMA_DIR):
-        return "I don't have enough evidence to answer that."
+        return None
 
     # 2. Load the existing Chroma vector database
     vectordb = Chroma(
@@ -94,7 +92,19 @@ def ask_question(question: str) -> str:
     docs = retriever.invoke(question)
 
     # Combine retrieved chunks into context 
-    context = "\n\n".join([d.page_content for d in docs]) 
+    context = "\n\n".join([d.page_content for d in docs])
+    
+    return context
+    
+
+# ---------------------------------------------------------
+# Generate using ChromaDB + LLM
+# ---------------------------------------------------------
+def generate_answer(question: str) -> str:
+   
+    context = find_context(question)
+    if context is None:
+        return "I don't have enough evidence to answer that."
     
     # Build prompt 
     prompt = PromptTemplate(template=PROMPT, input_variables=["context", "question"] ) 

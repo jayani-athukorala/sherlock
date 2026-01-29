@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 # Imports from RAG module
-from app.rag import ask_question, create_vector_index
+from app.rag import generate_answer, create_vector_index
 from app.evaluate import test_rag_system
 import os, shutil
 
@@ -56,7 +56,7 @@ async def home(
     # If POST request is for asking a question and question exists
     if action == "ask" and question:
         # Call question-answering function
-        answer = ask_question(question)
+        answer = generate_answer(question)
         
 
         # Render page with generated answer
@@ -104,6 +104,6 @@ async def upload_document(file: UploadFile):
 @app.get("/test") 
 def evaluate_api(): 
 
-    message = test_rag_system()
+    score = test_rag_system()
     
-    return message
+    return score
