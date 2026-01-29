@@ -1,0 +1,16 @@
+services:
+  # Define all application services
+  web:
+    # Build the Docker image using the Dockerfile in the current directory
+    build: .
+
+    # Map ports
+    ports:
+      - 8000:8000
+
+    # Mount the current project directory
+    # Enables live code updates without rebuilding the image
+    volumes:
+      - .:/app
+
+

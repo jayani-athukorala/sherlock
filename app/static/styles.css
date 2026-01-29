@@ -1,0 +1,87 @@
+/* General Page Styling */
+body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 0;
+}
+
+/* Main Container */
+.container {
+    max-width: 700px;
+    margin: 50px auto;
+    text-align: center;
+}
+
+/* Page Title */
+h1 {
+    margin-bottom: 30px;
+    color: #2c3e50;
+}
+
+/* Card Layout */
+.card {
+    background: #ffffff;
+    padding: 25px;
+    margin-bottom: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    text-align: left;
+}
+
+/* Headings */
+.card h2 {
+    margin-top: 0;
+    color: #34495e;
+}
+
+/* Description Text */
+.description {
+    color: #6c757d;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+/* Form Elements */
+input[type="file"],
+textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+/* Button Styling */
+button {
+    background-color: #3498db;
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 5px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+/* Success Message */
+.success-message {
+    color: #27ae60;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+/* Answer Box */
+.answer-box {
+    background: #ecf9ff;
+    border-left: 5px solid #3498db;
+    padding: 15px;
+    margin-bottom: 25px;
+    text-align: left;
+    border-radius: 5px;
+}

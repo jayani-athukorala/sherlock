@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sherlock API</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+
+</head>
+<body>
+
+    <div class="container">
+        <h1>🔍 Sherlock API</h1>
+
+        {% if upload_message %}
+            <p class="success-message">{{ upload_message }}</p>
+        {% endif %}
+
+        {% if data %}
+            <div class="answer-box">
+                <strong>Question:</strong>
+                <b><p>{{ data.question }}</p></b>
+                <strong>Answer:</strong>
+                <p>{{ data.answer }}</p>
+            </div>
+        {% endif %}
+
+        <!-- Upload Box -->
+        <div class="card">
+            <h2>Upload a File</h2>
+            <p class="description">Upload a case file in PDF or TXT format.</p>
+
+            <form action="/" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="upload">
+                <input type="file" name="file" accept=".pdf,.txt" required>
+                <button type="submit">Upload File</button>
+            </form>
+        </div>
+
+        <!-- Question Box -->
+        <div class="card">
+            <h2>Ask a Question</h2>
+            <p class="description">Ask questions.</p>
+
+            <form action="/" method="post">
+                <input type="hidden" name="action" value="ask">
+                <textarea name="question" rows="5" placeholder="Type your question here..." required></textarea>
+                <button type="submit">Ask Question</button>
+            </form>
+        </div>
+
+    </div>
+
+</body>
+</html>
+

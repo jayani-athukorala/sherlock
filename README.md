@@ -4,8 +4,6 @@ This project implements "Sherlock," a detective assistant that will answer quest
 
 ## Prerequisites
 
-### Docker Engine
-
 - **Docker Engine** installed and running.
 Can be installed from : https://docs.docker.com/engine/install/
 
