@@ -5,7 +5,8 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 # Imports from RAG module
-from app.rag import ask_question
+from app.rag import ask_question, create_vector_index
+from app.evaluate import test_rag_system
 import os, shutil
 
 
@@ -71,31 +72,38 @@ async def home(
     )
 
 
-# Asynchronous function to handle file uploads
 async def upload_document(file: UploadFile):
-    # Create temporary path for uploaded file
     temp_path = os.path.join(UPLOAD_DIR, file.filename)
 
-    # Write uploaded file contents to disk
     with open(temp_path, "wb") as f:
         f.write(await file.read())
 
-    # Convert filename to lowercase for extension checking
     filename = file.filename.lower()
 
-    # If file is a PDF, move it to PDF directory
+    # Decide final path
     if filename.endswith(".pdf"):
-        shutil.move(temp_path, os.path.join(PDF_DIR, file.filename))
+        final_path = os.path.join(PDF_DIR, file.filename)
+        shutil.move(temp_path, final_path)
 
-    # If file is a TXT file, move it to TXT directory
     elif filename.endswith(".txt"):
-        shutil.move(temp_path, os.path.join(TXT_DIR, file.filename))
+        final_path = os.path.join(TXT_DIR, file.filename)
+        shutil.move(temp_path, final_path)
 
-    # Delete unsupported files
     else:
         os.remove(temp_path)
         return "Only PDF and TXT files are allowed"
 
-    # Return success message after upload
-    return "File uploaded successfully!"
+    # Pass the final file path to create vector index for rag
+    message = create_vector_index(final_path)
 
+    # Return success message after saving the file chuncks
+    #return "File uploaded successfully!"
+    return message
+
+
+@app.get("/test") 
+def evaluate_api(): 
+
+    message = test_rag_system()
+    
+    return message

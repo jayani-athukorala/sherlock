@@ -12,5 +12,12 @@ services:
     # Enables live code updates without rebuilding the image
     volumes:
       - .:/app
+      - chroma_data:/chroma # <-- ChromaDB persistent volume
+
+    env_file: 
+      - .env
+
+volumes: 
+  chroma_data: {}
 
 
