@@ -2,30 +2,38 @@
 This project implements "Sherlock," a detective assistant that will answer questions about case files.
 
 
-## Prerequisites
-
-- **Docker Engine** installed and running.
-Can be installed from : https://docs.docker.com/engine/install/
+### Prerequisites
+- **Docker** and **Docker Compose** installed and running  
+  Installation guide: https://docs.docker.com/engine/install/
 
 Verify installation:
 ```bash
 docker --version
 ```
 
-### Build and Run Docker
+### Build and Run with Docker Compose
 
-#### Build the Docker image
+#### From the project root directory, run:
 
 ```bash
-docker build -t sherlock .
+docker compose up --build
+```
+This will Build the application image, Database Volume, Start the Sherlock application and required services and Expose the at port 8000 in your hosting machine.
+
+#### Upload Files and ask questions
+Files Supported : PDF / TXT
+Ask Questions : Ex. "What was Mrs. Hudson's alibi?"
+
+#### Stop and Remove Containers
+To stop and clean up all running containers:
+
+```bash
+docker compose down
 ```
 
-#### Run the container
+### Remove all containers, images, volumes, networks, and build cache
 ```bash
-docker run -p 8000:8000 sherlock
+docker system prune -a --volumes
+
 ```
 
-### Stop and remove the container
-```bash
-docker rm -f sherlock
-```
