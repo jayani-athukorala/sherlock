@@ -1,127 +1,160 @@
 # app/rag.py
-# Imports
-from langchain_community.llms import HuggingFaceHub
+# Imports...
+import os
+import chromadb
+from dotenv import load_dotenv
+import transformers
+import torch
+
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-#from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_community.vectorstores import Chroma
 
+# ---------------------------------------------------------
+# Environment
+# ---------------------------------------------------------
+load_dotenv()
+HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
-import os
-from dotenv import load_dotenv 
-load_dotenv() # loads .env when running locally 
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+# ---------------------------------------------------------
+# Embeddings (LOCK THIS MODEL)
+# ---------------------------------------------------------
+embeddings = HuggingFaceEmbeddings(
+    model_name="BAAI/bge-base-en-v1.5"
+)
 
-CHROMA_DIR = "/chroma"
+# ---------------------------------------------------------
+# Connect to Chroma DB (Docker service)
+# ---------------------------------------------------------
+chroma_client = chromadb.HttpClient(host="http://chroma:8000")
 
-# Create embedding model
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+# Create vector store
+vector_store = Chroma(
+    client=chroma_client,
+    collection_name="case_files",
+    embedding_function=embeddings
+)
 
-# Sherlock prompt
+# ---------------------------------------------------------
+# Sherlock Prompt (Anti-Hallucination)
+# ---------------------------------------------------------
 PROMPT = """
-        You are Sherlock Holmes. 
-        
-        You must answer ONLY using the information provided in the "Context" section. 
-        If the answer is not explicitly stated in the context, you MUST reply with: "I don't have enough evidence to answer that." 
-        
-        You are not allowed to guess, infer, assume, or invent clues. 
-        You must treat missing information as missing evidence.
+You are Sherlock Holmes.
 
-        Context:
-        {context}
+You MUST answer using ONLY the information in the Context.
+If the answer is NOT explicitly stated in the Context,
+you MUST reply with exactly:
 
-        Question:
-        {question}
+"I don't have enough evidence to answer that."
+
+You are NOT allowed to:
+- Use outside knowledge
+- Guess
+- Infer
+- Paraphrase missing facts
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+"""
+
+
+
+# ---------------------------------------------------------
+# Indexing: Add a Case File
+# ---------------------------------------------------------
+def index_document(file_path: str) -> str:
+    """
+    Load a PDF or text file, split it into chunks,
+    and store it in Chroma DB.
     """
 
-
-# ---------------------------------------------------------
-# Load and split a uploaded document to be saved in vector DB
-# ---------------------------------------------------------
-def create_vector_index(file_path: str):
-
-    # Based on file extension
     if file_path.lower().endswith(".pdf"):
         loader = PyPDFLoader(file_path)
     else:
         loader = TextLoader(file_path)
 
-    # Load the document into memory
-    docs = loader.load()
+    documents = loader.load()
 
-    # Create a text splitter to break the document into chunks
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=50
     )
 
-    # Split the loaded document into smaller chunks
-    chunks = splitter.split_documents(docs)
+    chunks = splitter.split_documents(documents)
 
-    # Save chunks into persistent ChromaDB
-    vectordb = Chroma(
-        collection_name="case_files",
-        embedding_function=embeddings,
-        persist_directory="/chroma"   # Docker volume
-    )
+    if not chunks:
+        return "No content found in document."
 
-    vectordb.add_documents(chunks)
-    vectordb.persist()
+    # Store documents (embeddings are created automatically)
+    vector_store.add_documents(chunks)
 
-    return "File uploaded successfully!"
+    # collection = chroma_client.get_collection("case_files")
+    # count = collection.count()
+
+    # return f"Indexed {len(chunks)} chunks. Total vectors in DB: {count}"
+
+
+    return f"Indexed {len(chunks)} chunks successfully."
 
 # ---------------------------------------------------------
-# Find Context
+# Retrieval
 # ---------------------------------------------------------
-def find_context(question: str):
-    # If the DB does not exist
-    if not os.path.exists(CHROMA_DIR):
+def retrieve_context(question: str, k: int = 4) -> str | None:
+    """
+    Retrieve top-k relevant chunks.
+    """
+
+    docs = vector_store.similarity_search(question, k=k)
+
+    if not docs:
         return None
 
-    # 2. Load the existing Chroma vector database
-    vectordb = Chroma(
-        persist_directory=CHROMA_DIR,
-        embedding_function=embeddings
-    )
-
-    # Retrieve top‑k chunks 
-    retriever = vectordb.as_retriever(search_kwargs={"k": 5}) 
-    docs = retriever.invoke(question)
-
-    # Combine retrieved chunks into context 
     context = "\n\n".join([d.page_content for d in docs])
-    
+
     return context
-    
 
 # ---------------------------------------------------------
-# Generate using ChromaDB + LLM
+# Question Answering (RAG)
 # ---------------------------------------------------------
-def generate_answer(question: str) -> str:
-   
-    context = find_context(question)
+def answer_question(question: str) -> str:
+    """
+    Answer a question using RAG.
+    """
+
+    context = retrieve_context(question)
+
     if context is None:
         return "I don't have enough evidence to answer that."
-    
-    # Build prompt 
-    prompt = PromptTemplate(template=PROMPT, input_variables=["context", "question"] ) 
-    final_prompt = prompt.format( context=context, question=question )
 
-    # Initialize the LLM (HuggingFaceHub model)
-    # Generate the final answer using the retrieved context
-    llm = HuggingFaceHub(
-        repo_id="mistralai/Mistral-7B-Instruct-v0.2",
-        model_kwargs={"temperature": 0}
+    final_prompt = PromptTemplate(
+        template=PROMPT,
+        input_variables=[context, question]
     )
 
-    # Parse the output cleanly 
-    parser = StrOutputParser() 
+    pipeline = transformers.pipeline(
+        "text-generation",
+        model="meta-llama/Meta-Llama-3.1-8B-Instruct",
+        huggingfacehub_api_token=os.environ["HUGGINGFACEHUB_API_TOKEN"],
+        model_kwargs={"torch_dtype": torch.bfloat16},
+        device_map="auto",
+    )
+
+    messages = [
+        {"role": "system", "content": context},
+        {"role": "user", "content": question},
+    ]
+
+    outputs = pipeline(
+        messages,
+        max_new_tokens=256,
+    )
     
-    # Run the LLM 
-    raw_output = llm.invoke(final_prompt)
-    answer = parser.parse(raw_output)
-    # Return the generated answer
-    return answer
+
+    return outputs[0]["generated_text"][-1]

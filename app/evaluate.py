@@ -2,8 +2,8 @@
 from datasets import Dataset
 import os
 from ragas import evaluate
-from ragas.metrics import faithfullness, answer_correctness
-from app.rag import find_context, generate_answer
+from ragas.metrics import faithfulness, answer_correctness
+from app.rag import retrieve_context, answer_question
 
 # Evaluation Dataset
 questions = [ "What was Mrs. Hudson's alibi?", 
@@ -26,11 +26,11 @@ def generate_sample():
     
     for question, ground_truth in zip(questions, ground_truths):
         # Retrieve context 
-        context = find_context(question) 
+        context = retrieve_context(question) 
         
               
         # Generate answer 
-        answer = generate_answer(question) 
+        answer = answer_question(question) 
         
         # Append to evaluation rows 
         eval_rows["question"].append(question) 
@@ -44,5 +44,5 @@ def test_rag_system():
     
     eval_rows = generate_sample()
     dataset = Dataset.from_dict(eval_rows)
-    results = evaluate(dataset, metrics=[faithfullness, answer_correctness])
+    results = evaluate(dataset, metrics=[faithfulness, answer_correctness])
     return results

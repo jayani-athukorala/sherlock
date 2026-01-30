@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 # Imports from RAG module
-from app.rag import generate_answer, create_vector_index
+from app.rag import answer_question, index_document
 from app.evaluate import test_rag_system
 import os, shutil
 
@@ -30,7 +30,9 @@ os.makedirs(PDF_DIR, exist_ok=True)
 os.makedirs(TXT_DIR, exist_ok=True)
 
 
-# Define a route that handles both GET and POST requests at root URL
+# ---------------------------------------------------------
+# Web API Interface [GET, POST]
+# ---------------------------------------------------------
 @app.api_route("/", methods=["GET", "POST"], response_class=HTMLResponse)
 async def home(
     request: Request,                      # Incoming HTTP request object
@@ -56,8 +58,10 @@ async def home(
     # If POST request is for asking a question and question exists
     if action == "ask" and question:
         # Call question-answering function
-        answer = generate_answer(question)
         
+        answer = answer_question(question)
+
+       
 
         # Render page with generated answer
         return templates.TemplateResponse(
@@ -72,6 +76,9 @@ async def home(
     )
 
 
+# ---------------------------------------------------------
+# Save PDF/TXT File in data Directory
+# ---------------------------------------------------------
 async def upload_document(file: UploadFile):
     temp_path = os.path.join(UPLOAD_DIR, file.filename)
 
@@ -94,10 +101,9 @@ async def upload_document(file: UploadFile):
         return "Only PDF and TXT files are allowed"
 
     # Pass the final file path to create vector index for rag
-    message = create_vector_index(final_path)
+    message = index_document(final_path)
 
     # Return success message after saving the file chuncks
-    #return "File uploaded successfully!"
     return message
 
 

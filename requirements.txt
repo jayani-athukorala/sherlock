@@ -3,15 +3,17 @@ python-multipart
 uvicorn
 jinja2
 
-langchain
+langchain>=0.2.0
+langchain-chroma>=0.1.2
+langchain-huggingface
+chromadb
 langchain_core
 langchain-community
 langchain-text-splitters
-langchain-huggingface
-sentence-transformers
+sentence-transformersd
 huggingface_hub
 python-dotenv
 pypdf
-
-chromadb
+torch
+transformers
 ragas

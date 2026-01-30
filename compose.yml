@@ -1,23 +1,27 @@
 services:
-  # Define all application services
-  web:
-    # Build the Docker image using the Dockerfile in the current directory
-    build: .
-
-    # Map ports
-    ports:
-      - 8000:8000
-
-    # Mount the current project directory
-    # Enables live code updates without rebuilding the image
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: chroma-db
     volumes:
-      - .:/app
-      - chroma_data:/chroma # ChromaDB persistent volume
+      - chroma_data:/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma
+    restart: unless-stopped
 
-    env_file: 
+  rag-app:
+    build: .
+    container_name: rag-app
+    depends_on:
+      - chroma
+    volumes:
+      - ./app:/app/app
+      - ./data:/app/data
+    env_file:
       - .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
 
-volumes: 
-  chroma_data: {}
-
-
+volumes:
+  chroma_data:

@@ -14,18 +14,18 @@ docker --version
 
 ### Build and Run Docker
 
-# Build the Docker image
+#### Build the Docker image
 
 ```bash
 docker build -t sherlock .
 ```
 
-# Run the container
+#### Run the container
 ```bash
 docker run -p 8000:8000 sherlock
 ```
 
-## Stop and remove the container
+### Stop and remove the container
 ```bash
 docker rm -f sherlock
 ```

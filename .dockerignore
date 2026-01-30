@@ -3,3 +3,11 @@
 .git
 .gitignore
 README.md
+tmp
+node_modules
+.vscode
+.env
+logs
+*.log
+dist
+build
