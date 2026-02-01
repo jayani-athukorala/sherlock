@@ -23,7 +23,7 @@ docker --version
 - In the project root directory, create a file named ```bash .env```
 
 - Add the provided access token
-```bash HUGGINGFACEHUB_API_TOKEN=hf_replace_with_the_token_here
+```bash HUGGINGFACEHUB_API_TOKEN=replace_with_the_token_here
 ```
 
 ## Run the Application
@@ -61,5 +61,6 @@ docker compose down
 #### Remove all containers, images, volumes, networks, and build cache
 ```bash
 docker system prune -a --volumes
+
 
 ```
