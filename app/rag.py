@@ -2,7 +2,6 @@
 # Imports...
 import os
 import chromadb
-from dotenv import load_dotenv
 import transformers
 import torch
 
@@ -11,12 +10,14 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import PromptTemplate
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from huggingface_hub import login
+
 
 # ---------------------------------------------------------
-# Environment
+# ENVIONEMENT
 # ---------------------------------------------------------
-load_dotenv()
-HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+login(token=os.environ["HUGGINGFACEHUB_API_TOKEN"])
+
 
 # ---------------------------------------------------------
 # Embeddings (LOCK THIS MODEL)
@@ -41,8 +42,7 @@ vector_store = Chroma(
 # Sherlock Prompt (Anti-Hallucination)
 # ---------------------------------------------------------
 PROMPT = """
-You are Sherlock Holmes.
-
+You are Sherlock. 
 You MUST answer using ONLY the information in the Context.
 If the answer is NOT explicitly stated in the Context,
 you MUST reply with exactly:
@@ -57,9 +57,6 @@ You are NOT allowed to:
 
 Context:
 {context}
-
-Question:
-{question}
 
 Answer:
 """
@@ -106,48 +103,52 @@ def index_document(file_path: str) -> str:
 # ---------------------------------------------------------
 # Retrieval
 # ---------------------------------------------------------
-def retrieve_context(question: str, k: int = 4) -> str | None:
+def retrieve_context(question: str, k: int = 4) -> list[str]:
     """
     Retrieve top-k relevant chunks.
     """
-
     docs = vector_store.similarity_search(question, k=k)
 
     if not docs:
-        return None
+        return []
 
-    context = "\n\n".join([d.page_content for d in docs])
+    return [d.page_content.strip() for d in docs]
 
-    return context
 
 # ---------------------------------------------------------
-# Question Answering (RAG)
+# Retrieval and Question Answering (RAG)
 # ---------------------------------------------------------
 def answer_question(question: str) -> str:
     """
-    Answer a question using RAG.
+    Retrieve top-k relevant chunks and Answer a question using RAG.
     """
 
-    context = retrieve_context(question)
+    docs = vector_store.similarity_search(question, k=4)
 
-    if context is None:
+    if not docs:
         return "I don't have enough evidence to answer that."
 
-    final_prompt = PromptTemplate(
+    context = "\n\n".join([d.page_content for d in docs])
+
+
+    prompt_template = PromptTemplate(
         template=PROMPT,
-        input_variables=[context, question]
+        input_variables=["context"]
     )
+
+    final_context = prompt_template.format(context=context)
 
     pipeline = transformers.pipeline(
         "text-generation",
         model="meta-llama/Meta-Llama-3.1-8B-Instruct",
-        huggingfacehub_api_token=os.environ["HUGGINGFACEHUB_API_TOKEN"],
-        model_kwargs={"torch_dtype": torch.bfloat16},
+        model_kwargs={"dtype": torch.bfloat16},
         device_map="auto",
+        temperature=0.2, # Lower Hallucination
+        trust_remote_code=True
     )
 
     messages = [
-        {"role": "system", "content": context},
+        {"role": "system", "content": final_context},
         {"role": "user", "content": question},
     ]
 
@@ -157,4 +158,4 @@ def answer_question(question: str) -> str:
     )
     
 
-    return outputs[0]["generated_text"][-1]
+    return outputs[0]["generated_text"][-1]["content"].strip()

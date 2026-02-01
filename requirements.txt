@@ -10,10 +10,11 @@ chromadb
 langchain_core
 langchain-community
 langchain-text-splitters
-sentence-transformersd
+sentence-transformers
 huggingface_hub
 python-dotenv
 pypdf
-torch
-transformers
 ragas
+transformers
+torch
+accelerate
