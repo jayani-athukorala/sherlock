@@ -22,7 +22,7 @@ docker --version
 ### Environmwnt configuration
 - In the project root directory, create a file named ```bash .env```
 
-- Add the provided access token to the ```bash .env``` file
+- Add the provided access token to the created file.
 
 ## Run the Application
 
@@ -62,4 +62,5 @@ docker system prune -a --volumes
 
 
 ```
+
 
